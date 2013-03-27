@@ -13,6 +13,7 @@
   (get-file-names (filter suitable-file? files)))
 
 (defn parallel [func xs]
+  "Как map, но применяет func к первым двум элементам из xs параллельно" 
   (if (> (count xs) 1)
     (let [acc (ref [])]
       (dosync (alter acc conj @(future (func (first xs))))
@@ -22,8 +23,10 @@
 
 (defn find-files-helper [suitable-file? dir]
   (let [files (.listFiles dir)]
-    (join (parallel #(find-files-helper suitable-file? %) (get-dirs files))
-          (get-suitable-names suitable-file? files))))
+    (join ;объединяем коллекцию имен всех подходящих файлов из текущего каталога с 
+          ;коллекцией имен всех подходящими файлов, которые нашли в его подкалогах 
+      (parallel #(find-files-helper suitable-file? %) (get-dirs files)) ;ищем подходящие файлы в подкаталогах 
+      (get-suitable-names suitable-file? files))))  ;подходящие файлы из текущего каталога
             
 (defn find-files [file-name path]
   (find-files-helper #(compare-file-names file-name %) (file path)))
